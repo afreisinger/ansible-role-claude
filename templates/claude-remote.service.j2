@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: MIT-0
+# Managed by Ansible — do not edit manually
+[Unit]
+Description=Claude Code Remote Control
+Documentation=https://docs.anthropic.com/claude-code
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+User={{ claude_user }}
+Group={{ claude_user }}
+WorkingDirectory={{ claude_projects_dir }}
+
+ExecStart=/usr/bin/tmux new-session -d -s {{ claude_remote_tmux_session }} \
+  '{{ _claude_user_home }}/.local/bin/claude remote control'
+ExecStop=/usr/bin/tmux kill-session -t {{ claude_remote_tmux_session }}
+
+TimeoutStopSec=15s
+
+Environment=HOME={{ _claude_user_home }}
+Environment=PATH={{ _claude_user_home }}/.local/bin:/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=-{{ claude_remote_env_file }}
+
+[Install]
+WantedBy=multi-user.target

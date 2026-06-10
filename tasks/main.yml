@@ -48,11 +48,12 @@
 
 # --- System prerequisites (installed as root) ---
 
-- name: Ensure Node.js and npm are installed
+- name: Ensure Node.js, npm and tmux are installed
   ansible.builtin.apt:
     name:
       - nodejs
       - npm
+      - tmux
     state: present
     update_cache: true
   when: ansible_facts['os_family'] == 'Debian'
@@ -85,3 +86,23 @@
     npm_config_cache: "{{ _claude_user_home }}/.npm"
   when: not _claude_binary_stat.stat.exists
   changed_when: true
+
+# --- Systemd remote service (optional) ---
+
+- name: Deploy claude-remote.service unit
+  ansible.builtin.template:
+    src: claude-remote.service.j2
+    dest: /etc/systemd/system/claude-remote.service
+    owner: root
+    group: root
+    mode: "0644"
+  when: claude_remote_service_enabled
+  notify: Reload systemd and restart claude-remote
+
+- name: Enable and start claude-remote.service
+  ansible.builtin.systemd:
+    name: claude-remote.service
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: claude_remote_service_enabled

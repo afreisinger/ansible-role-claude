@@ -15,3 +15,13 @@ claude_create_projects_dir: false
 
 # npm package version — "latest" or a pinned version like "1.0.3"
 claude_version: "latest"
+
+# Remote service — set to true to deploy and enable claude-remote.service
+claude_remote_service_enabled: false
+
+# tmux session name used by claude-remote.service
+claude_remote_tmux_session: "claude"
+
+# Optional env file with ANTHROPIC_API_KEY (and any other env vars).
+# The leading '-' in EnvironmentFile means it's optional — missing file is not an error.
+claude_remote_env_file: "/etc/claude/{{ claude_user }}.env"
