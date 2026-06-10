@@ -96,7 +96,7 @@
     owner: root
     group: root
     mode: "0644"
-  when: claude_remote_service_enabled
+  when: claude_remote_service_deploy or claude_remote_service_enabled
   notify: Reload systemd and restart claude-remote
 
 - name: Enable and start claude-remote.service

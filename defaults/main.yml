@@ -16,7 +16,10 @@ claude_create_projects_dir: false
 # npm package version — "latest" or a pinned version like "1.0.3"
 claude_version: "latest"
 
-# Remote service — set to true to deploy and enable claude-remote.service
+# Remote service — deploy the unit file (does NOT start the service)
+claude_remote_service_deploy: false
+
+# Enable and start claude-remote.service (requires claude login first)
 claude_remote_service_enabled: false
 
 # tmux session name used by claude-remote.service
