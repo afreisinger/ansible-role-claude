@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT-0
+---
+# vars file for afreisinger.claude
+
+_claude_npm_package: "@anthropic-ai/claude-code"
+
+# Claude Code installs to ~/.local by default when using --prefix
+_claude_npm_prefix: ".local"

@@ -1,0 +1,36 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+
+  pre_tasks:
+    - name: Update apt cache.
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 600
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Wait for systemd to complete initialization. # noqa command-instead-of-module
+      ansible.builtin.command: systemctl is-system-running
+      register: systemctl_status
+      until: >
+        'running' in systemctl_status.stdout or
+        'degraded' in systemctl_status.stdout
+      retries: 30
+      delay: 5
+      when: ansible_facts['service_mgr'] == 'systemd'
+      changed_when: false
+      failed_when: systemctl_status.rc > 1
+
+    - name: Create test user for molecule
+      ansible.builtin.user:
+        name: claudeuser
+        state: present
+        create_home: true
+
+  roles:
+    - role: "afreisinger.claude"
+      vars:
+        claude_user: "claudeuser"
+        claude_projects_dir: "/home/claudeuser/projects"
+        claude_create_projects_dir: true

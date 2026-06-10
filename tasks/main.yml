@@ -1,0 +1,87 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for afreisinger.claude
+
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - claude_user | length > 0
+      - claude_projects_dir | length > 0
+    fail_msg: "claude_user and claude_projects_dir must be defined and non-empty"
+
+# --- Pre-checks ---
+
+- name: Check target user exists
+  ansible.builtin.command: getent passwd {{ claude_user }}
+  register: _claude_user_check
+  changed_when: false
+  failed_when: _claude_user_check.rc != 0
+
+- name: Set user home directory
+  ansible.builtin.set_fact:
+    _claude_user_home: "{{ _claude_user_check.stdout.split(':')[5] }}"
+
+- name: Check projects directory exists
+  ansible.builtin.stat:
+    path: "{{ claude_projects_dir }}"
+  register: _claude_projects_stat
+
+- name: Fail if projects directory does not exist
+  ansible.builtin.fail:
+    msg: >-
+      Projects directory '{{ claude_projects_dir }}' does not exist.
+      Create it first or set claude_create_projects_dir: true.
+  when:
+    - not _claude_projects_stat.stat.exists
+    - not claude_create_projects_dir
+
+- name: Create projects directory
+  ansible.builtin.file:
+    path: "{{ claude_projects_dir }}"
+    state: directory
+    owner: "{{ claude_user }}"
+    group: "{{ claude_user }}"
+    mode: "0755"
+  when:
+    - not _claude_projects_stat.stat.exists
+    - claude_create_projects_dir
+
+# --- System prerequisites (installed as root) ---
+
+- name: Ensure Node.js and npm are installed
+  ansible.builtin.apt:
+    name:
+      - nodejs
+      - npm
+    state: present
+    update_cache: true
+  when: ansible_facts['os_family'] == 'Debian'
+
+# --- Claude Code installation (runs as the target user, never as root) ---
+
+- name: Ensure ~/.local/bin exists for the user
+  ansible.builtin.file:
+    path: "{{ _claude_user_home }}/{{ _claude_npm_prefix }}/bin"
+    state: directory
+    owner: "{{ claude_user }}"
+    group: "{{ claude_user }}"
+    mode: "0755"
+
+- name: Check if Claude Code is already installed
+  ansible.builtin.stat:
+    path: "{{ _claude_user_home }}/{{ _claude_npm_prefix }}/bin/claude"
+  register: _claude_binary_stat
+
+- name: Install Claude Code CLI as {{ claude_user }}
+  ansible.builtin.command: >-
+    npm install -g
+    --prefix {{ _claude_user_home }}/{{ _claude_npm_prefix }}
+    {{ _claude_npm_package }}{{ '@' + claude_version if claude_version != 'latest' else '' }}
+  become: true
+  become_user: "{{ claude_user }}"
+  environment:
+    HOME: "{{ _claude_user_home }}"
+    PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    npm_config_cache: "{{ _claude_user_home }}/.npm"
+  when: not _claude_binary_stat.stat.exists
+  changed_when: true

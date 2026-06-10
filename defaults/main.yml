@@ -1,0 +1,17 @@
+#SPDX-License-Identifier: MIT-0
+---
+# defaults file for afreisinger.claude
+
+# Target user — must exist on the system before the role runs.
+# Claude Code will be installed for this user only, never as root.
+claude_user: ""
+
+# Directory where the user's Claude Code projects will live.
+# Must exist unless claude_create_projects_dir is true.
+claude_projects_dir: ""
+
+# Create claude_projects_dir if it does not exist.
+claude_create_projects_dir: false
+
+# npm package version — "latest" or a pinned version like "1.0.3"
+claude_version: "latest"

@@ -1,0 +1,42 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Check Claude Code binary exists
+      ansible.builtin.stat:
+        path: /home/claudeuser/.local/bin/claude
+      register: claude_bin
+
+    - name: Assert Claude Code binary is present
+      ansible.builtin.assert:
+        that: claude_bin.stat.exists
+        fail_msg: "Claude Code binary not found at /home/claudeuser/.local/bin/claude"
+
+    - name: Assert binary is not owned by root
+      ansible.builtin.assert:
+        that: claude_bin.stat.pw_name == "claudeuser"
+        fail_msg: "Claude Code binary must be owned by claudeuser, not root"
+
+    - name: Check projects directory exists
+      ansible.builtin.stat:
+        path: /home/claudeuser/projects
+      register: claude_projects
+
+    - name: Assert projects directory is present and owned by the user
+      ansible.builtin.assert:
+        that:
+          - claude_projects.stat.exists
+          - claude_projects.stat.pw_name == "claudeuser"
+        fail_msg: "Projects directory missing or not owned by claudeuser"
+
+    - name: Run claude --version as claudeuser
+      ansible.builtin.command: /home/claudeuser/.local/bin/claude --version
+      become: true
+      become_user: claudeuser
+      register: claude_version_output
+      changed_when: false
+
+    - name: Show claude version
+      ansible.builtin.debug:
+        msg: "{{ claude_version_output.stdout }}"
